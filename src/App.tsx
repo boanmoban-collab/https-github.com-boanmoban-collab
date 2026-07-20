@@ -128,6 +128,8 @@ export default function App() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationLogs, setVerificationLogs] = useState<string[]>([]);
   const [verificationResult, setVerificationResult] = useState<"SUCCESS" | "FAILED" | null>(null);
+  const [envConfigured, setEnvConfigured] = useState(false);
+  const [envApiKeyMasked, setEnvApiKeyMasked] = useState<string | null>(null);
 
   // References for terminal and websocket
   const terminalBottomRef = useRef<HTMLDivElement | null>(null);
@@ -180,6 +182,18 @@ export default function App() {
     syncTimeWithServer();
     fetchInitialKlines();
     generateInitialNews();
+
+    // Check server side env status
+    fetch("/api/mexc/env-status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.configured) {
+          setEnvConfigured(true);
+          setEnvApiKeyMasked(data.apiKeyMasked);
+          addLog("SUCCESS", `🛡️ تم اكتشاف مفاتيح MEXC API جاهزة في ملف .env بالخادم (${data.apiKeyMasked})`);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const syncTimeWithServer = async () => {
@@ -691,12 +705,12 @@ export default function App() {
 
   // --- REAL-TIME LIVE MEXC API CONNECTION & AUTHENTICATION VERIFIER ---
   const runLiveVerification = async () => {
-    if (!config.apiKey || !config.apiSecret) {
+    if (!envConfigured && (!config.apiKey || !config.apiSecret)) {
       setVerificationLogs([
-        "[FAIL] مفاتيح الاتصال فارغة! يرجى إدخال X-MEXC-APIKEY و MEXC SECRET KEY للمتابعة."
+        "[FAIL] مفاتيح الاتصال فارغة! يرجى إدخال X-MEXC-APIKEY و MEXC SECRET KEY في صفحة الإعدادات أو تجهيز ملف .env للمتابعة."
       ]);
       setVerificationResult("FAILED");
-      addLog("ERROR", "❌ التحقق من الاتصال: لم يتم إدخال مفاتيح MEXC API.");
+      addLog("ERROR", "❌ التحقق من الاتصال: لم يتم إدخال أو اكتشاف مفاتيح MEXC API.");
       return;
     }
 
@@ -733,7 +747,10 @@ export default function App() {
       
       // 2. HTTP Request Headers Audit
       logTrace("⏳ [الخطوة 2/5] جاري مراجعة ترويسة الطلب ومفتاح API Key...");
-      logTrace(`   • X-MEXC-APIKEY: ${config.apiKey.substring(0, 8)}...${config.apiKey.slice(-4)} (حالة فنية: مُدخلة)`);
+      const activeKeyLabel = config.apiKey 
+        ? `${config.apiKey.substring(0, 8)}...${config.apiKey.slice(-4)}` 
+        : envApiKeyMasked || "مجهول";
+      logTrace(`   • X-MEXC-APIKEY: ${activeKeyLabel} (حالة فنية: مُدخلة عبر ${config.apiKey ? 'واجهة المستخدم' : 'ملف .env بالخادم'})`);
       logTrace("   • Content-Type: application/json");
       logTrace("✓ [الخطوة 2/5] تم فحص وتمرير الترويسات المطلوبة بنجاح.");
 
@@ -1205,11 +1222,77 @@ export default function App() {
                           </span>
                         </div>
                         <div className="p-3 bg-gray-900/40 rounded-lg">
-                          <span className="text-[10px] text-gray-400 block">الرافعة المالية</span>
-                          <span className="text-xs font-black text-rose-500 flex items-center mt-1">
-                            x{config.leverage} Isolated
+                          <span className="text-[10px] text-gray-400 block">مفاتيح .env بالخادم</span>
+                          <span className={`text-xs font-black flex items-center mt-1 ${envConfigured ? "text-[#00FF87]" : "text-gray-500"}`}>
+                            <ShieldCheck className="w-3.5 h-3.5 ml-1" />
+                            {envConfigured ? "مُكتشفة ونشطة" : "غير مجهزة"}
                           </span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Live Connection Audit Panel on Dashboard */}
+                    <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-6 space-y-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                        <div>
+                          <h3 className="font-extrabold text-sm text-white flex items-center">
+                            <ShieldCheck className="w-4.5 h-4.5 text-[#00FF87] ml-2" />
+                            مدقق الاتصال الفعلي والمصادقة لـ MEXC API
+                          </h3>
+                          <p className="text-[11px] text-gray-400 mt-1">تأكيد اتصال المفاتيح المضمنة في ملف البيئة .env ومزامنة التوقيع المشفر HMAC-SHA256.</p>
+                        </div>
+                        {verificationResult && (
+                          <span className={`px-2.5 py-1 rounded text-xs font-bold font-mono ${
+                            verificationResult === "SUCCESS" ? "bg-emerald-500/20 text-[#34D399]" : "bg-red-500/20 text-[#F87171]"
+                          }`}>
+                            {verificationResult === "SUCCESS" ? "✓ متصل وحقيقي" : "✗ فشل المصادقة"}
+                          </span>
+                        )}
+                      </div>
+
+                      {envConfigured && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2 space-x-reverse text-xs text-emerald-400 font-bold">
+                            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>تم اكتشاف مفاتيح التداول المباشرة في ملف .env بالخادم بنجاح!</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-emerald-500 self-end sm:self-auto bg-emerald-500/5 px-2 py-0.5 rounded">مفتاح API: {envApiKeyMasked}</span>
+                        </div>
+                      )}
+
+                      {verificationLogs.length > 0 && (
+                        <div className="h-36 bg-black border border-[#1F2937] rounded-lg p-3 overflow-y-auto font-mono text-[10px] text-gray-300 leading-relaxed scrollbar space-y-1">
+                          {verificationLogs.map((log, index) => {
+                            let logColor = "text-gray-300";
+                            if (log.startsWith("✓") || log.startsWith("🎉") || log.includes("[نجاح]")) logColor = "text-[#34D399]";
+                            else if (log.startsWith("❌") || log.includes("[فشل]")) logColor = "text-[#F87171]";
+                            else if (log.includes("⏳")) logColor = "text-indigo-400";
+                            return (
+                              <div key={index} className={`${logColor} whitespace-pre-wrap`}>
+                                {log}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-2">
+                        <span className="text-[10px] text-gray-500 font-mono">
+                          حالة مزامنة UTC: {timeOffset !== 0 ? `+${(timeOffset / 1000).toFixed(2)}s` : "متزامن تلقائياً"}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={isVerifying}
+                          onClick={runLiveVerification}
+                          className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center ${
+                            isVerifying
+                              ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                              : "bg-[#00FF87] text-[#090D1A] hover:bg-[#00e176]"
+                          }`}
+                        >
+                          {isVerifying && <RefreshCw className="w-3.5 h-3.5 animate-spin ml-2" />}
+                          {isVerifying ? "جاري تدقيق الاتصال بالخوادم..." : "بدء اختبار المصادقة والاتصال الفعلي"}
+                        </button>
                       </div>
                     </div>
 

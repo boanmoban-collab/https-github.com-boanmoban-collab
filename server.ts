@@ -37,7 +37,19 @@ async function startServer() {
     }
   });
 
-  // 3. Generic Secure Proxy for MEXC Signed/Authenticated API Endpoints
+  // 3. Check if MEXC keys are configured in .env server-side
+  app.get("/api/mexc/env-status", (_req, res) => {
+    const hasKey = !!process.env.MEXC_API_KEY;
+    const hasSecret = !!process.env.MEXC_API_SECRET;
+    const apiKey = process.env.MEXC_API_KEY || "";
+    
+    res.json({
+      configured: hasKey && hasSecret,
+      apiKeyMasked: hasKey ? `${apiKey.substring(0, 6)}...${apiKey.slice(-4)}` : null
+    });
+  });
+
+  // 4. Generic Secure Proxy for MEXC Signed/Authenticated API Endpoints
   // Receives API Key, Secret, Endpoint path, HTTP Method, and parameters.
   // Performs server-side cryptographic HMAC-SHA256 signature generation to secure keys.
   app.post("/api/mexc/proxy", async (req, res) => {
