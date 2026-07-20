@@ -41,9 +41,13 @@ async function startServer() {
   // Receives API Key, Secret, Endpoint path, HTTP Method, and parameters.
   // Performs server-side cryptographic HMAC-SHA256 signature generation to secure keys.
   app.post("/api/mexc/proxy", async (req, res) => {
-    const { apiKey, apiSecret, endpoint, method = "GET", params = {} } = req.body;
+    let { apiKey, apiSecret, endpoint, method = "GET", params = {} } = req.body;
 
-    if (!apiKey || !apiSecret || !endpoint) {
+    // Use environment variables if not provided in the request body
+    const finalApiKey = apiKey || process.env.MEXC_API_KEY;
+    const finalApiSecret = apiSecret || process.env.MEXC_API_SECRET;
+
+    if (!finalApiKey || !finalApiSecret || !endpoint) {
       return res.status(400).json({ error: "apiKey, apiSecret, and endpoint are required" });
     }
 
@@ -59,7 +63,7 @@ async function startServer() {
 
       // Generate HMAC-SHA256 Signature
       const signature = crypto
-        .createHmac("sha256", apiSecret)
+        .createHmac("sha256", finalApiSecret)
         .update(sortedQueryString)
         .digest("hex");
 
@@ -70,7 +74,7 @@ async function startServer() {
       const finalURL = `${baseURL}/${endpoint.replace(/^\//, "")}?${finalQueryString}`;
 
       const headers = {
-        "X-MEXC-APIKEY": apiKey,
+        "X-MEXC-APIKEY": finalApiKey,
         "Content-Type": "application/json",
       };
 

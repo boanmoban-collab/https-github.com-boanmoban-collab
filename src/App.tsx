@@ -1889,37 +1889,68 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Quick APK Android Builder simulation */}
+                    {/* Real APK & AAB Android Builder Pipeline */}
                     <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-6 space-y-4">
                       <div>
-                        <h3 className="font-extrabold text-sm text-white">مولد ملفات بناء أندرويد لـ LT_9904</h3>
-                        <p className="text-[11px] text-gray-400 mt-1">توليد ملف APK المباشر من GitHub Actions محلياً لإصدارات أندرويد 15 السريعة.</p>
+                        <h3 className="font-extrabold text-sm text-white flex items-center">
+                          <Cpu className="w-4.5 h-4.5 text-indigo-400 ml-2" />
+                          بناء وإصدار تطبيق أندرويد 15 الحقيقي
+                        </h3>
+                        <p className="text-[11px] text-gray-400 mt-1">
+                          يتم بناء التطبيق الحقيقي بالكامل (APK & AAB) وتوقيعه تلقائياً عبر خطوط إنتاج 
+                          <span className="text-indigo-300 font-bold mx-1">GitHub Actions</span> 
+                          المرتبطة بمستودعك.
+                        </p>
                       </div>
 
-                      {isBuildingApk ? (
-                        <div className="space-y-3">
-                          <div className="flex justify-between text-xs text-gray-300 font-mono">
-                            <span>جاري البناء...</span>
-                            <span>{buildProgress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-indigo-500 h-full transition-all duration-300" style={{ width: `${buildProgress}%` }}></div>
-                          </div>
-                          <div className="h-32 bg-black border border-[#1F2937] rounded-lg p-2 overflow-y-auto font-mono text-[9px] text-[#00FF87] leading-relaxed scrollbar">
-                            {buildLogs.map((log, index) => (
-                              <div key={index}>{log}</div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={triggerApkBuildSim}
-                          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-extrabold transition-colors flex items-center justify-center"
+                      {/* Real Action Links */}
+                      <div className="space-y-2 pt-2 border-t border-[#1f2937]">
+                        <a
+                          href="https://github.com/boanmoban-collab/Boan-Moban/actions"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-2 bg-[#24292e] hover:bg-[#1a1e22] text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center border border-[#3f4750]"
                         >
-                          <Cpu className="w-4 h-4 ml-2 text-indigo-200" />
-                          توليد ملف تثبيت أندرويد فوري
-                        </button>
-                      )}
+                          👁️ مراقبة البناء المباشر في GitHub Actions
+                        </a>
+                        <a
+                          href="https://github.com/boanmoban-collab/Boan-Moban/releases"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center"
+                        >
+                          📦 تحميل ملفات APK و AAB الحقيقية مباشرة
+                        </a>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#1f2937] space-y-3">
+                        <span className="text-[10px] text-gray-500 block">
+                          أو اختبر مُحاكي البناء السريع للمطورين محلياً:
+                        </span>
+                        {isBuildingApk ? (
+                          <div className="space-y-3">
+                            <div className="flex justify-between text-xs text-gray-300 font-mono">
+                              <span>جاري البناء...</span>
+                              <span>{buildProgress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                              <div className="bg-indigo-500 h-full transition-all duration-300" style={{ width: `${buildProgress}%` }}></div>
+                            </div>
+                            <div className="h-32 bg-black border border-[#1F2937] rounded-lg p-2 overflow-y-auto font-mono text-[9px] text-[#00FF87] leading-relaxed scrollbar">
+                              {buildLogs.map((log, index) => (
+                                <div key={index}>{log}</div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={triggerApkBuildSim}
+                            className="w-full py-2 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/20 text-indigo-200 rounded-lg text-xs font-bold transition-colors flex items-center justify-center"
+                          >
+                            تشغيل مُحاكي البناء السريع
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
